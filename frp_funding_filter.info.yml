@@ -1,8 +1,9 @@
 name: FRP Funding Filter
-description: 'Dynamic filtering for SME funding opportunities on Mastercard FRP.'
+description: 'AJAX-powered filtering for SME funding opportunities.'
 type: module
 core_version_requirement: ^9 || ^10
 package: Custom
 dependencies:
   - drupal:taxonomy
   - drupal:node
+  - drupal:core

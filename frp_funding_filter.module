@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains hooks for the FRP Funding Filter module.
+ * Contains hook implementations for the FRP Funding Filter module.
  */
 
 use Drupal\Core\Routing\RouteMatchInterface;
@@ -11,6 +11,6 @@ use Drupal\Core\Routing\RouteMatchInterface;
  */
 function frp_funding_filter_help($route_name, RouteMatchInterface $route_match) {
   if ($route_name == 'help.page.frp_funding_filter') {
-    return '<p>' . t('Filters funding opportunities by region/category.') . '</p>';
+    return '<p>' . t('Provides dynamic filtering of funding opportunities by region and category.') . '</p>';
   }
 }

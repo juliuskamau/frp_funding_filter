@@ -1,0 +1,5 @@
+filter_styles:
+  version: 1.0
+  css:
+    theme:
+      css/filter-styles.css: {}

@@ -8,77 +8,44 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Provides a dynamic funding opportunity filter form.
+ * Provides a funding opportunity filter form.
  */
 class FundingFilterForm extends FormBase {
 
-  /**
-   * The entity type manager.
-   *
-   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
-   */
   protected $entityTypeManager;
 
-  /**
-   * Constructs a new FundingFilterForm.
-   *
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
-   *   The entity type manager.
-   */
   public function __construct(EntityTypeManagerInterface $entity_type_manager) {
     $this->entityTypeManager = $entity_type_manager;
   }
 
-  /**
-   * {@inheritdoc}
-   */
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('entity_type.manager')
     );
   }
 
-  /**
-   * {@inheritdoc}
-   */
   public function getFormId() {
     return 'frp_funding_filter_form';
   }
 
-  /**
-   * {@inheritdoc}
-   */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    // Load taxonomy terms for regions and categories.
-    $region_terms = $this->entityTypeManager->getStorage('taxonomy_term')
-      ->loadTree('region');
-    $category_terms = $this->entityTypeManager->getStorage('taxonomy_term')
-      ->loadTree('funding_category');
-
-    // Build dropdown options.
-    $region_options = ['' => $this->t('All')];
-    foreach ($region_terms as $term) {
-      $region_options[$term->tid] = $term->name;
-    }
-
-    $category_options = ['' => $this->t('All')];
-    foreach ($category_terms as $term) {
-      $category_options[$term->tid] = $term->name;
-    }
-
-    // Form elements.
+    // Region dropdown
     $form['region'] = [
       '#type' => 'select',
       '#title' => $this->t('Region'),
-      '#options' => $region_options,
+      '#options' => $this->getTaxonomyOptions('region'),
+      '#empty_option' => $this->t('- All -'),
     ];
 
+    // Category dropdown
     $form['category'] = [
       '#type' => 'select',
       '#title' => $this->t('Category'),
-      '#options' => $category_options,
+      '#options' => $this->getTaxonomyOptions('funding_category'),
+      '#empty_option' => $this->t('- All -'),
     ];
 
+    // Submit button with AJAX
     $form['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Filter'),
@@ -88,22 +55,35 @@ class FundingFilterForm extends FormBase {
       ],
     ];
 
+    // Results container
     $form['results'] = [
       '#type' => 'container',
       '#attributes' => ['id' => 'funding-results'],
-      '#markup' => $this->t('Select filters to view opportunities.'),
+      '#markup' => '<div class="placeholder-text">' . $this->t('Select filters to view opportunities.') . '</div>',
     ];
+
+    // Attach CSS for styling
+    $form['#attached']['library'][] = 'frp_funding_filter/filter_styles';
 
     return $form;
   }
 
-  /**
-   * AJAX callback to return filtered results.
-   */
+  protected function getTaxonomyOptions($vocabulary) {
+    $terms = $this->entityTypeManager->getStorage('taxonomy_term')
+      ->loadTree($vocabulary);
+    
+    $options = [];
+    foreach ($terms as $term) {
+      $options[$term->tid] = $term->name;
+    }
+    return $options;
+  }
+
   public function ajaxFilterResults(array &$form, FormStateInterface $form_state) {
     $query = $this->entityTypeManager->getStorage('node')->getQuery()
       ->condition('type', 'funding_opportunity')
-      ->condition('status', 1);
+      ->condition('status', 1)
+      ->accessCheck(TRUE);
 
     if ($region = $form_state->getValue('region')) {
       $query->condition('field_region', $region);
@@ -117,20 +97,27 @@ class FundingFilterForm extends FormBase {
 
     $results = [];
     foreach ($nodes as $node) {
-      $results[] = $node->toLink()->toString();
+      $results[] = [
+        '#type' => 'link',
+        '#title' => $node->label(),
+        '#url' => $node->toUrl(),
+      ];
     }
 
-    $form['results']['#markup'] = $results 
-      ? implode('<br>', $results) 
-      : $this->t('No opportunities found.');
+    if (empty($results)) {
+      return [
+        '#markup' => '<div class="no-results">' . $this->t('No opportunities match your criteria.') . '</div>',
+      ];
+    }
 
-    return $form['results'];
+    return [
+      '#theme' => 'item_list',
+      '#items' => $results,
+      '#attributes' => ['class' => ['funding-opportunities-list']],
+    ];
   }
 
-  /**
-   * {@inheritdoc}
-   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    // No traditional submit needed for AJAX forms.
+    // Optional: Add non-AJAX submission handling if needed
   }
 }

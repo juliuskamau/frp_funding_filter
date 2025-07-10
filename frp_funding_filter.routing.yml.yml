@@ -1,0 +1,7 @@
+frp_funding_filter.form:
+  path: '/funding-filter'
+  defaults:
+    _form: '\Drupal\frp_funding_filter\Form\FundingFilterForm'
+    _title: 'Funding Opportunities Filter'
+  requirements:
+    _permission: 'access content'
